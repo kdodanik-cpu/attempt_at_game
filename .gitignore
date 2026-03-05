@@ -1,0 +1,19 @@
+#######################
+### FILES TO IGNORE ###
+#######################
+
+# CLion files
+.idea/
+cmake-build-debug/
+cmake-build-release/
+
+# Compiled output
+*.exe
+*.obj
+*.o
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
