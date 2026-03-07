@@ -7,7 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Configure to build executable with all source files in directory
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-add_executable(attempt_at_game ${SOURCES})
+add_executable(attempt_at_game ${SOURCES}
+        src/core/GameLoop.h
+        src/core/GameLoop.cpp
+        src/player/Player.h
+        src/player/Player.cpp)
 
 # Include dirs
 target_include_directories(attempt_at_game PRIVATE
