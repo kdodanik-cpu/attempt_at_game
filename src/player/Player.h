@@ -9,8 +9,12 @@
 struct Player {
   Vector3 position;
   Vector3 velocity;
+  float yaw = 0.0f;
+  float pitch = 0.0f;
 
   void Update(float dt);
+  void HandleMouseMovement();
+  Camera GetCamera() const;
 };
 
 #endif // ATTEMPT_AT_GAME_PLAYER_H
