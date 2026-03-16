@@ -9,6 +9,7 @@
 struct Player {
   Vector3 position;
   Vector3 velocity;
+  float verticalSpeed = 0.0f; // Added it because I needed to separate XZ movement from Y movement
   float yaw = 0.0f;
   float pitch = 0.0f;
 

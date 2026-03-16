@@ -3,7 +3,6 @@
 //
 
 #include "Player.h"
-
 #include <algorithm>
 #include <raymath.h>
 
@@ -15,24 +14,44 @@ void Player::Update(float dt) {
   ///////////////////////
   // CONTROLLER INPUT //
   //////////////////////
+  Camera camera = GetCamera();
+
+  Vector3 move = {0};
+  Vector3 distance = camera.target - camera.position;
+  distance.y = 0.0f;
+  Vector3 forwardVector = Vector3Normalize(distance);
+  Vector3 rightVector = Vector3CrossProduct(forwardVector, Vector3(0.0f, 1.0f, 0.0f));
 
   // Forward movement
   if (IsKeyDown(KEY_W)) {
-    velocity.z = -5.0f;
+    move += forwardVector;
   } else if (IsKeyDown(KEY_S)) {
-    velocity.z = 5.0f;
-  } else velocity.z = 0.0f;
-
+    move -= forwardVector;
+  };
   // Lateral movement
   if (IsKeyDown(KEY_A)) {
-    velocity.x = -5.5f;
+    move -= rightVector;
   } else if (IsKeyDown(KEY_D)) {
-    velocity.x = 5.5f;
-  } else velocity.x = 0.0f;
+    move += rightVector;
+  }
 
+  velocity = Vector3Scale(move, 10.0f);
   position += velocity * dt;
-  };
 
+  // Handle vertical movement, indepdently
+  if (IsKeyPressed(KEY_SPACE)) {
+    verticalSpeed = 10.0f;
+  }
+  position.y += verticalSpeed * dt;
+
+  if (position.y > 0.0f) {
+    verticalSpeed -= 5.5f * dt; // Will be computed each frame
+  } else if (position.y <= 0.0f && verticalSpeed < 0.0f) {
+    verticalSpeed = 0.0f;
+    position.y = 0.0f;
+  }
+
+  };
 
 void Player::HandleMouseMovement() {
   Vector2 MouseDelta = GetMouseDelta();

@@ -13,8 +13,9 @@ void GameLoop::Update(Player& player) {
   float dt = GetFrameTime();
   player.Update(dt);
   player.HandleMouseMovement();
-
 }
+
+
 
 void GameLoop::Draw(const Player& player) {
   BeginDrawing();
@@ -23,7 +24,8 @@ void GameLoop::Draw(const Player& player) {
   DrawPlane(
     Vector3{0.0f, 0.0f, 0.0f}, // Ground center coords
     Vector2{50, 50}, // Size of plane
-    DARKGRAY);
+    Color(99, 149, 238, 100)
+    );
 
   DrawCapsule(
     player.position,
