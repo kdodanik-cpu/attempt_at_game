@@ -38,7 +38,7 @@ void Player::Update(float dt) {
   velocity = Vector3Scale(move, 10.0f);
   position += velocity * dt;
 
-  // Handle vertical movement, indepdently
+  // Handle vertical movement, independently
   if (IsKeyPressed(KEY_SPACE)) {
     verticalSpeed = 10.0f;
   }
