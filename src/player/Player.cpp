@@ -45,7 +45,7 @@ void Player::Update(float dt) {
   position.y += verticalSpeed * dt;
 
   if (position.y > 0.0f) {
-    verticalSpeed -= 5.5f * dt; // Will be computed each frame
+    verticalSpeed -= 5.5f * dt;
   } else if (position.y <= 0.0f && verticalSpeed < 0.0f) {
     verticalSpeed = 0.0f;
     position.y = 0.0f;
