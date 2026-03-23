@@ -8,10 +8,10 @@ int main() {
   Player player;
   player.position = Vector3(0,0.25f, -2.0f);
   player.velocity = Vector3(0,0,0);
-  GameLoop::Init();
+  GameLoop::init();
   while (!WindowShouldClose()) {
-    GameLoop::Update(player);
-    GameLoop::Draw(player);
+    GameLoop::update(player);
+    GameLoop::draw(player);
   }
   CloseWindow();
   return 0;

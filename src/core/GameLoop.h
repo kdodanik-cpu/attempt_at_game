@@ -5,8 +5,8 @@
 #define ATTEMPT_AT_GAME_GAMELOOP_H
 #include "player/Player.h"
 namespace GameLoop {
-void Init();
-void Update(Player& player);
-void Draw(const Player& player);
+void init();
+void update(Player& player);
+void draw(const Player& player);
 }
 #endif // ATTEMPT_AT_GAME_GAMELOOP_H

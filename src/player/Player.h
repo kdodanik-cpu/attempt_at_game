@@ -5,17 +5,18 @@
 #ifndef ATTEMPT_AT_GAME_PLAYER_H
 #define ATTEMPT_AT_GAME_PLAYER_H
 #include "raylib.h"
+#include "world/World.h"
 
 struct Player {
   Vector3 position;
   Vector3 velocity;
-  float verticalSpeed = 0.0f; // Added it because I needed to separate XZ movement from Y movement
+  float vertical_speed = 0.0f; // Added it because I needed to separate XZ movement from Y movement
   float yaw = 0.0f;
   float pitch = 0.0f;
 
-  void Update(float dt);
-  void HandleMouseMovement();
-  Camera GetCamera() const;
+  void update(float dt, const World& world);
+  void handle_mouse_movement();
+  Camera get_camera() const;
 };
 
 #endif // ATTEMPT_AT_GAME_PLAYER_H

@@ -4,29 +4,26 @@
 #include "GameLoop.h"
 #include <raylib.h>
 #include <raymath.h>
+#include "world/World.h"
 
-void GameLoop::Init() {
+static World world;
+
+void GameLoop::init() {
   DisableCursor();
+  world.init();
 }
 
-void GameLoop::Update(Player& player) {
+void GameLoop::update(Player& player) {
   float dt = GetFrameTime();
-  player.Update(dt);
-  player.HandleMouseMovement();
+  player.update(dt, world);
+  player.handle_mouse_movement();
 }
 
-
-
-void GameLoop::Draw(const Player& player) {
+void GameLoop::draw(const Player& player) {
   BeginDrawing();
   ClearBackground(WHITE);
-  BeginMode3D(player.GetCamera());
-  DrawPlane(
-    Vector3{0.0f, 0.0f, 0.0f}, // Ground center coords
-    Vector2{50, 50}, // Size of plane
-    Color(99, 149, 238, 100)
-    );
-
+  BeginMode3D(player.get_camera());
+  world.draw();
   DrawCapsule(
     player.position,
     player.position + Vector3{0, 1.6f, 0},

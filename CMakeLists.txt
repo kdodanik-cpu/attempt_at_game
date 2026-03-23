@@ -11,7 +11,9 @@ add_executable(attempt_at_game ${SOURCES}
         src/core/GameLoop.h
         src/core/GameLoop.cpp
         src/player/Player.h
-        src/player/Player.cpp)
+        src/player/Player.cpp
+        src/world/World.cpp
+        src/world/World.h)
 
 # Include dirs
 target_include_directories(attempt_at_game PRIVATE
