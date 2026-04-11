@@ -33,5 +33,21 @@ void GameLoop::draw(const Player& player) {
     PURPLE
     );
   EndMode3D();
+  // Horizontal line
+  DrawLine(
+    GetScreenWidth() * 0.5f - 15.0f,
+    GetScreenHeight() * 0.5f,
+    GetScreenWidth() * 0.5f + 15.0f,
+    GetScreenHeight() * 0.5f,
+    BLACK
+    );
+  // Vertical line
+  DrawLine(
+    GetScreenWidth() * 0.5f,
+    GetScreenHeight() * 0.5f - 15.0f,
+    GetScreenWidth() * 0.5f,
+    GetScreenHeight() * 0.5f + 15.0f,
+    BLACK);
+
   EndDrawing();
 }
