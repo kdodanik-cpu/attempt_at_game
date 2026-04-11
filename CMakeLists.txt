@@ -13,7 +13,9 @@ add_executable(attempt_at_game ${SOURCES}
         src/player/Player.h
         src/player/Player.cpp
         src/world/World.cpp
-        src/world/World.h)
+        src/world/World.h
+        src/player/Gun.cpp
+        src/player/Gun.h)
 
 # Include dirs
 target_include_directories(attempt_at_game PRIVATE
@@ -24,5 +26,4 @@ target_include_directories(attempt_at_game PRIVATE
 # Link static raylib lib
 target_link_libraries(
 attempt_at_game PRIVATE
-${CMAKE_SOURCE_DIR}/imported_libraries/raylib/lib/raylib.lib
-winmm)
+${CMAKE_SOURCE_DIR}/imported_libraries/raylib/lib/libraylib.a)

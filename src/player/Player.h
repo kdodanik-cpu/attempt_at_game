@@ -6,6 +6,7 @@
 #define ATTEMPT_AT_GAME_PLAYER_H
 #include "raylib.h"
 #include "world/World.h"
+#include "player/Gun.h"
 
 struct Player {
   Vector3 position;
@@ -13,10 +14,13 @@ struct Player {
   float vertical_speed = 0.0f; // Added it because I needed to separate XZ movement from Y movement
   float yaw = 0.0f;
   float pitch = 0.0f;
+  Gun gun;
 
   void update(float dt, const World& world);
   void handle_mouse_movement();
   Camera get_camera() const;
+  void shoot(const World& world);
+
 };
 
 #endif // ATTEMPT_AT_GAME_PLAYER_H

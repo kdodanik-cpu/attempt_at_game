@@ -8,9 +8,43 @@
 #include <ostream>
 #include <raymath.h>
 
-static const Vector3 EYE_LEVEL_OFFSET = Vector3(0.0f, 1.6f, 0.0f);
-static const float SENSITIVITY = 0.01f;
-static const float PITCH_LIMIT = PI / 2.0f - 0.01f;
+static constexpr Vector3 EYE_LEVEL_OFFSET = Vector3(0.0f, 1.6f, 0.0f);
+static constexpr float SENSITIVITY = 0.01f;
+static constexpr float PITCH_LIMIT = PI / 2.0f - 0.01f;
+
+void Player::shoot(const World& world)
+{
+  Camera cam = get_camera();
+  Ray ray = {cam.position, Vector3Normalize(Vector3Subtract(cam.target, cam.position))};
+
+  std::vector <RayCollision> candidate_rays;
+
+  for (Box box : world.Boxes)
+  {
+    RayCollision ray_collision =
+      GetRayCollisionBox(ray
+      ,BoundingBox(
+        box.position - box.dimensions * 0.5f,
+        box.position + box.dimensions * 0.5f));
+    if (ray_collision.hit) candidate_rays.push_back(ray_collision);
+  }
+
+  auto closest =
+    std::min_element(
+  candidate_rays.begin(),
+  candidate_rays.end(),
+  [](const RayCollision& a, const RayCollision& b)
+  {
+    return a.distance < b.distance;
+  });
+
+if (closest != candidate_rays.end())
+  TraceLog(LOG_INFO, "Hit at: %f %f %f",
+    closest->point.x,
+    closest->point.y,
+    closest->point.z);
+
+};
 
 void Player::update(float dt, const World& world) {
   ///////////////////////
@@ -42,11 +76,11 @@ void Player::update(float dt, const World& world) {
 
   // Handle vertical movement, independently
   if (IsKeyPressed(KEY_SPACE)) {
-    vertical_speed = 1.5f;
+    vertical_speed = 3.5f;
   }
   position.y += vertical_speed * dt;
 
-  constexpr float TOLERANCE = 0.005f;
+
 
   // Apply gravity
   vertical_speed -= 2.5f * dt;
@@ -58,6 +92,15 @@ void Player::update(float dt, const World& world) {
     vertical_speed = 0.0f;
     position.y = floor_height;
   }
+
+  if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && gun.can_fire())
+  {
+    shoot(world);
+    gun.on_fired();
+  } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !gun.can_fire())
+    TraceLog(LOG_INFO, "Can't fire yet, time until fire: %f: ", gun.fire_rate - gun.time_since_shot);
+
+  gun.update(dt);
 
   };
 
@@ -82,4 +125,7 @@ Camera Player::get_camera() const {
   };
   camera.target = camera.position + forward_vector;
   return camera;
+
+
 }
+
