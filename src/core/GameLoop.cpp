@@ -32,6 +32,10 @@ void GameLoop::draw(const Player& player) {
     8,
     PURPLE
     );
+
+  if (player.hit_marker_timer > 0)
+    DrawSphere(player.last_hit_point, 0.1f, RED);
+
   EndMode3D();
   // Horizontal line
   DrawLine(

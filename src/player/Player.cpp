@@ -39,11 +39,15 @@ void Player::shoot(const World& world)
   });
 
 if (closest != candidate_rays.end())
+{
   TraceLog(LOG_INFO, "Hit at: %f %f %f",
-    closest->point.x,
-    closest->point.y,
-    closest->point.z);
+     closest->point.x,
+     closest->point.y,
+     closest->point.z);
 
+  last_hit_point = closest->point;
+  hit_marker_timer = 0.5f;
+}
 };
 
 void Player::update(float dt, const World& world) {
@@ -93,6 +97,7 @@ void Player::update(float dt, const World& world) {
     position.y = floor_height;
   }
 
+  // Shooting code
   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && gun.can_fire())
   {
     shoot(world);
@@ -101,8 +106,10 @@ void Player::update(float dt, const World& world) {
     TraceLog(LOG_INFO, "Can't fire yet, time until fire: %f: ", gun.fire_rate - gun.time_since_shot);
 
   gun.update(dt);
-
+  hit_marker_timer = std::max(hit_marker_timer - dt, 0.0f);
   };
+
+
 
 void Player::handle_mouse_movement() {
   Vector2 mouse_delta = GetMouseDelta();
@@ -125,7 +132,6 @@ Camera Player::get_camera() const {
   };
   camera.target = camera.position + forward_vector;
   return camera;
-
 
 }
 

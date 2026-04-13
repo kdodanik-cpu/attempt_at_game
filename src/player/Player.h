@@ -15,6 +15,8 @@ struct Player {
   float yaw = 0.0f;
   float pitch = 0.0f;
   Gun gun;
+  Vector3 last_hit_point = {0};
+  float hit_marker_timer = 0;
 
   void update(float dt, const World& world);
   void handle_mouse_movement();
