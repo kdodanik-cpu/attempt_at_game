@@ -5,17 +5,27 @@
 #include <raylib.h>
 #include <raymath.h>
 #include "world/World.h"
+#include "world/Enemy.h"
 
 static World world;
+static std::vector<Enemy> enemies;
 
 void GameLoop::init() {
   DisableCursor();
   world.init();
+  Enemy test_enemy;
+  test_enemy = {
+    1.6f,
+    0.5f,
+    Vector3{0.0f, 0.0f, 2.0f},
+    100
+  };
+  enemies.push_back(test_enemy);
 }
 
 void GameLoop::update(Player& player) {
   float dt = GetFrameTime();
-  player.update(dt, world);
+  player.update(dt, world, enemies);
   player.handle_mouse_movement();
 }
 
@@ -33,6 +43,20 @@ void GameLoop::draw(const Player& player) {
     PURPLE
     );
 
+  for (Enemy enemy : enemies)
+  {
+    DrawCapsule(
+      enemy.position,
+      Vector3{
+        enemy.position.x,
+        enemy.position.y + enemy.height,
+        enemy.position.z},
+        enemy.radius,
+        8,
+        8,
+        YELLOW
+      );
+  }
   if (player.hit_marker_timer > 0)
     DrawSphere(player.last_hit_point, 0.1f, RED);
 

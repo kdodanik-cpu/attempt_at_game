@@ -7,8 +7,8 @@ Scope: solo dev, ambitious but realistic.
 
 ## Student Profile
 - **Name:** VSP (Krish)
-- **C++:** Past beginner. Knows primitive types, pointers, references, classes, structs, public/private, static, extern, std::vector, std::cout. Has been tinkering with Raylib for a few months.
-- **Git:** Functional. Knows init, add, commit, push, remote. Still references cheat sheet for anything beyond basics.
+- **C++:** Past beginner. Knows primitive types, pointers, references, classes, structs, public/private, static, extern, std::vector, std::cout, lambdas, iterators. Has been tinkering with Raylib for a few months.
+- **Git:** Functional. Knows init, add, commit, push, remote, amend. Still references cheat sheet for anything beyond basics.
 - **Learning style:** Task-based, task by task. Give tasks, help when stuck. Explain *why* when it matters, not just *what*.
 
 ## Teaching Approach
@@ -136,11 +136,49 @@ Scope: solo dev, ambitious but realistic.
 
 ---
 
-## Lecture 6 — (not yet started)
-**Planned: Hitscan gunplay — raycast weapon**
-- Introduces raycasting as a concept
-- Raylib's `GetRayCollisionBox` for hit detection against world geometry
-- A `Gun` struct or similar, owned by `Player`
-- Shooting on left click, crosshair in HUD
-- Foundation for damage, enemies, and combat systems
-- Horizontal collision deferred — not painful enough yet to prioritize over guns
+### Lecture 6 — Hitscan Gunplay
+**Concepts covered:**
+- Raycasting — ray as origin + direction, `GetRayCollisionBox` returns `RayCollision` (hit, distance, point)
+- `Gun` struct on `Player` — fire rate, accumulator, `can_fire()`, `on_fired()`, `update(dt)`
+- `std::min_element` with a lambda comparator to find closest hit among all candidate collisions
+- Lambdas — `[]` capture list, inline anonymous functions, passing as comparator arguments to STL algorithms
+- Iterators vs pointers — iterators behave like pointers (`*`, `->`), but `end()` is past-the-end and invalid to dereference
+- Always check `iterator != container.end()` before dereferencing
+- Unguarded code after a single-line `if` — missing braces causes subsequent lines to run unconditionally regardless of condition
+- Uninitialized fields cause undefined behavior from frame one — always initialize in struct definition
+- 2D HUD drawing — anything after `EndMode3D()` and before `EndDrawing()` is screen space (pixels, not world coordinates)
+- `IsKeyPressed` vs `IsMouseButtonPressed` — wrong function compiles silently, produces wrong behavior at runtime
+- Passing `&&` result as function argument — `MOUSE_BUTTON_LEFT && !gun.can_fire()` evaluates to 0 or 1, compiles fine, does the wrong thing
+- Integer vs float in `DrawLine` — prefer `GetScreenWidth() / 2` over `* 0.5f`
+- GitHub PAT authentication — passwords not accepted for Git operations; classic token with `repo` scope required
+- `git commit --amend` — rewrites last commit message or contents; only safe before pushing
+
+**Decisions made:**
+- `Player` owns `Gun gun`, `Vector3 last_hit_point = {0}`, `float hit_marker_timer = 0.0f`
+- `shoot(const World&)` finds closest hit via `std::min_element`, sets marker fields only inside the `if (closest != end())` guard
+- `hit_marker_timer` ticked down in `Player::update` via `std::max(hit_marker_timer - dt, 0.0f)`
+- Hit marker drawn as red sphere (`DrawSphere`, radius 0.1f) in `GameLoop::draw` when `hit_marker_timer > 0`
+- Crosshair drawn as two `DrawLine` calls after `EndMode3D()`, using `GetScreenWidth() / 2` and `GetScreenHeight() / 2`
+
+**Git log at end of lecture:**
+```
+(amended) Added crosshair
+Transitioned to linux and added a working hitscan system for guns
+4607ba4 Implemented basic vertical collision
+7702af5 fix gravity framerate dependence, fix bitwise AND bug
+857dbf6 removed dead code
+162a76e player moves according to camera orientation now
+8ef999c mouse-look, first-person camera, cursor lock
+2ed6766 minor corrections related to game loop
+9dac739 game loop, delta time, player stub, first 3d scene
+4b6ded8 build system working, blank window
+4d58d3a project start
+```
+
+---
+
+## Lecture 7 — (not yet started)
+**Candidates based on trajectory:**
+- Enemy/NPC stubs — something to shoot at that reacts to being hit
+- Damage system — health, hit response
+- Horizontal collision — still deferred, may become painful enough to prioritize

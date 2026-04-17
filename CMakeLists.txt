@@ -15,7 +15,10 @@ add_executable(attempt_at_game ${SOURCES}
         src/world/World.cpp
         src/world/World.h
         src/player/Gun.cpp
-        src/player/Gun.h)
+        src/player/Gun.h
+        src/world/Enemy.cpp
+        src/world/Enemy.h
+)
 
 # Include dirs
 target_include_directories(attempt_at_game PRIVATE

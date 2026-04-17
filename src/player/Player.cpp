@@ -12,7 +12,9 @@ static constexpr Vector3 EYE_LEVEL_OFFSET = Vector3(0.0f, 1.6f, 0.0f);
 static constexpr float SENSITIVITY = 0.01f;
 static constexpr float PITCH_LIMIT = PI / 2.0f - 0.01f;
 
-void Player::shoot(const World& world)
+void Player::shoot(
+  const World& world,
+  std::vector<Enemy>& enemies)
 {
   Camera cam = get_camera();
   Ray ray = {cam.position, Vector3Normalize(Vector3Subtract(cam.target, cam.position))};
@@ -28,6 +30,27 @@ void Player::shoot(const World& world)
         box.position + box.dimensions * 0.5f));
     if (ray_collision.hit) candidate_rays.push_back(ray_collision);
   }
+
+  for (Enemy enemy: enemies)
+    {
+      BoundingBox enemy_bounding_box =
+    { // Probably not the accurate collision box for a capsule, but will do for now
+        Vector3(
+          enemy.position.x - enemy.radius ,
+          enemy.position.y,
+          enemy.position.z - enemy.radius),
+        Vector3(
+          enemy.position.x + enemy.radius,
+          enemy.position.y + enemy.height + enemy.radius,
+          enemy.position.z + enemy.radius)
+      };
+      RayCollision possible_enemy_collisions =  GetRayCollisionBox(
+        ray,
+        enemy_bounding_box
+        );
+
+      if (possible_enemy_collisions.hit) candidate_rays.push_back(possible_enemy_collisions);
+    }
 
   auto closest =
     std::min_element(
@@ -50,7 +73,7 @@ if (closest != candidate_rays.end())
 }
 };
 
-void Player::update(float dt, const World& world) {
+void Player::update(float dt, const World& world, std::vector<Enemy>& enemies) {
   ///////////////////////
   // CONTROLLER INPUT //
   //////////////////////
@@ -100,7 +123,7 @@ void Player::update(float dt, const World& world) {
   // Shooting code
   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && gun.can_fire())
   {
-    shoot(world);
+    shoot(world,enemies );
     gun.on_fired();
   } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !gun.can_fire())
     TraceLog(LOG_INFO, "Can't fire yet, time until fire: %f: ", gun.fire_rate - gun.time_since_shot);
