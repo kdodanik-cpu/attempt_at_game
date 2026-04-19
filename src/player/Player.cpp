@@ -7,10 +7,15 @@
 #include <iostream>
 #include <ostream>
 #include <raymath.h>
+#include <variant>
 
 static constexpr Vector3 EYE_LEVEL_OFFSET = Vector3(0.0f, 1.6f, 0.0f);
 static constexpr float SENSITIVITY = 0.01f;
 static constexpr float PITCH_LIMIT = PI / 2.0f - 0.01f;
+struct HitCandidate {
+  RayCollision ray_coll;
+  std::variant<const Box*, Enemy*> possible_entity;
+};
 
 void Player::shoot(
   const World& world,
@@ -19,19 +24,28 @@ void Player::shoot(
   Camera cam = get_camera();
   Ray ray = {cam.position, Vector3Normalize(Vector3Subtract(cam.target, cam.position))};
 
-  std::vector <RayCollision> candidate_rays;
+  std::vector<HitCandidate> candidate_hits;
 
-  for (Box box : world.Boxes)
+  for (const Box& box : world.Boxes)
   {
     RayCollision ray_collision =
       GetRayCollisionBox(ray
       ,BoundingBox(
         box.position - box.dimensions * 0.5f,
         box.position + box.dimensions * 0.5f));
-    if (ray_collision.hit) candidate_rays.push_back(ray_collision);
-  }
 
-  for (Enemy enemy: enemies)
+    if (ray_collision.hit)
+    {
+      const Box* box_ptr = &box;
+      HitCandidate current_hit =
+        {
+        ray_collision,
+        box_ptr
+        };
+      candidate_hits.push_back(current_hit);
+    }
+  }
+  for (Enemy& enemy : enemies)
     {
       BoundingBox enemy_bounding_box =
     { // Probably not the accurate collision box for a capsule, but will do for now
@@ -49,27 +63,44 @@ void Player::shoot(
         enemy_bounding_box
         );
 
-      if (possible_enemy_collisions.hit) candidate_rays.push_back(possible_enemy_collisions);
+      if (possible_enemy_collisions.hit)
+      {
+        Enemy* enemy_ptr = &enemy;
+        HitCandidate hit_candidate =
+          {
+          possible_enemy_collisions,
+          enemy_ptr
+          };
+        candidate_hits.push_back(hit_candidate);
+      }
     }
 
   auto closest =
     std::min_element(
-  candidate_rays.begin(),
-  candidate_rays.end(),
-  [](const RayCollision& a, const RayCollision& b)
+  candidate_hits.begin(),
+  candidate_hits.end(),
+  [](const HitCandidate& a, const HitCandidate& b)
   {
-    return a.distance < b.distance;
+    return a.ray_coll.distance < b.ray_coll.distance;
   });
 
-if (closest != candidate_rays.end())
+if (closest != candidate_hits.end())
 {
   TraceLog(LOG_INFO, "Hit at: %f %f %f",
-     closest->point.x,
-     closest->point.y,
-     closest->point.z);
+     closest->ray_coll.point.x,
+     closest->ray_coll.point.y,
+     closest->ray_coll.point.z);
 
-  last_hit_point = closest->point;
+  last_hit_point = closest->ray_coll.point;
   hit_marker_timer = 0.5f;
+
+  if (
+    std::holds_alternative<Enemy*>(closest->possible_entity)
+    )
+  {
+    Enemy* e = std::get<Enemy*>(closest->possible_entity);
+    e->take_damage(10);
+  }
 }
 };
 
@@ -132,8 +163,6 @@ void Player::update(float dt, const World& world, std::vector<Enemy>& enemies) {
   hit_marker_timer = std::max(hit_marker_timer - dt, 0.0f);
   };
 
-
-
 void Player::handle_mouse_movement() {
   Vector2 mouse_delta = GetMouseDelta();
   yaw -= mouse_delta.x * SENSITIVITY;
@@ -155,6 +184,5 @@ Camera Player::get_camera() const {
   };
   camera.target = camera.position + forward_vector;
   return camera;
-
 }
 

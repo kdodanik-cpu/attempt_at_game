@@ -14,9 +14,8 @@ struct Enemy {
     Vector3 position;
     int health;
 
-    //Getters
-    bool is_alive();
-
+    bool is_alive() const;
+    void take_damage(int damage);
 };
 
 

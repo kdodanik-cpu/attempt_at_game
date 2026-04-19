@@ -2,6 +2,8 @@
 // Created by Krish on 3/7/2026.
 //
 #include "GameLoop.h"
+
+#include <algorithm>
 #include <raylib.h>
 #include <raymath.h>
 #include "world/World.h"
@@ -27,6 +29,11 @@ void GameLoop::update(Player& player) {
   float dt = GetFrameTime();
   player.update(dt, world, enemies);
   player.handle_mouse_movement();
+  enemies.erase(
+    std::remove_if(
+      enemies.begin(), enemies.end(),
+      [](const Enemy& e){return !e.is_alive();}),
+  enemies.end());
 }
 
 void GameLoop::draw(const Player& player) {
@@ -42,20 +49,19 @@ void GameLoop::draw(const Player& player) {
     8,
     PURPLE
     );
-
-  for (Enemy enemy : enemies)
+  for (const Enemy& enemy : enemies)
   {
-    DrawCapsule(
-      enemy.position,
-      Vector3{
-        enemy.position.x,
-        enemy.position.y + enemy.height,
-        enemy.position.z},
-        enemy.radius,
-        8,
-        8,
-        YELLOW
-      );
+      DrawCapsule(
+        enemy.position,
+        Vector3{
+          enemy.position.x,
+          enemy.position.y + enemy.height,
+          enemy.position.z},
+          enemy.radius,
+          8,
+          8,
+          YELLOW
+        );
   }
   if (player.hit_marker_timer > 0)
     DrawSphere(player.last_hit_point, 0.1f, RED);
