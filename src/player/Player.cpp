@@ -17,6 +17,73 @@ struct HitCandidate {
   std::variant<const Box*, Enemy*> possible_entity;
 };
 
+
+void Player::check_if_grounded(const World& world)
+{
+  // Knowing whether the player is resting a top an object requires access to the objects it is allowed
+  // to rest on. Because of this, I passed a World, which contains colliders, as a read-only parameter.
+  // The most obvious thing to begin discarding are objects whose top surface is above the player's bottom, as
+  // the player cannot rest on them. The remaining candidates ought to be checked on the basis of the X and Z axes.
+  // Objects not aligned on BOTH axes with the player must also be discarded since the player isn't going to touch them.
+  // If after all these checks more than one candidate collider remains, we simply choose that which is highest on the
+  // Y coordinate. There should be no issues with this because due to prior exclusions those above the player have
+  // already been filtered out, meaning the one highest is the one closest the player's bottom.
+
+
+  // Prevent bugs due to floating point precision errors
+  const float TOLERANCE = 0.05f;
+
+  std::vector<Box> candidate_boxes;
+  for (const Box& box: world.Boxes)
+  {
+    float box_top_coordinate = box.position.y + box.dimensions.y * 0.5f;
+    if (position.y >= box_top_coordinate - TOLERANCE)
+    {
+      candidate_boxes.push_back(box);
+    }
+  }
+
+  // Note for self on how this works. remove_if doesn't remove anything perse. It reshuffles elements in the container
+  // so that those that ought to be excluded are placed at the back of the container and then returns a pointer to the
+  // index where the junk you don't want to retain begins, which is the first thing you feed to .erase().
+  candidate_boxes.erase(
+    std::remove_if(
+      candidate_boxes.begin(),
+      candidate_boxes.end(),
+      [&](const Box& box)
+      {
+        bool should_remove = false; // Default
+        Vector2 center_distance = {
+       fabs(position.x - box.position.x),
+       fabs(position.z - box.position.z)};
+        Vector2 halves_distance = {
+       radius + box.dimensions.x * 0.5f,
+       radius + box.dimensions.z * 0.5f};
+
+        Vector2 separation = center_distance - halves_distance;
+        if (separation.x > 0 && separation.y > 0) should_remove = true;
+        return should_remove;
+      })
+      , candidate_boxes.end()
+      );
+
+  auto candidate_box = std::max_element(
+  candidate_boxes.begin(), candidate_boxes.end(),
+  [](const Box& a, const Box& b)
+  {
+    return a.position.y < b.position.y;
+  });
+
+  if (candidate_boxes.empty()) {
+    is_grounded = false;}
+  else if(
+    position.y <= candidate_box->position.y + candidate_box->dimensions.y * 0.5f &&
+    position.y >= candidate_box->position.y + candidate_box->dimensions.y * 0.5f - TOLERANCE)
+  {
+    is_grounded =  true;
+  } else is_grounded = false;
+}
+
 void Player::shoot(
   const World& world,
   std::vector<Enemy>& enemies)
@@ -116,6 +183,9 @@ void Player::update(float dt, const World& world, std::vector<Enemy>& enemies) {
   Vector3 forwardVector = Vector3Normalize(distance);
   Vector3 rightVector = Vector3CrossProduct(forwardVector, Vector3(0.0f, 1.0f, 0.0f));
 
+  // Required to check to determine how player should move
+  check_if_grounded(world);
+
   // Forward movement
   if (IsKeyDown(KEY_W)) {
     move += forwardVector;
@@ -129,11 +199,17 @@ void Player::update(float dt, const World& world, std::vector<Enemy>& enemies) {
     move += rightVector;
   }
 
-  velocity = Vector3Scale(move, 10.0f);
+  const float GROUNDED_SCALAR = 10.0f;
+  const float AIRBORNE_SCALAR = 3.3f;
+
+  // There's probably a prettier way to write this...
+  if (is_grounded) {velocity = Vector3Scale(move, GROUNDED_SCALAR);}
+  else velocity = Vector3Scale(move, AIRBORNE_SCALAR);
+  //velocity = Vector3Scale(move, 10.0f);
   position += velocity * dt;
 
   // Handle vertical movement, independently
-  if (IsKeyPressed(KEY_SPACE)) {
+  if (IsKeyPressed(KEY_SPACE) && is_grounded) {
     vertical_speed = 3.5f;
   }
   position.y += vertical_speed * dt;

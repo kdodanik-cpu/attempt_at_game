@@ -12,9 +12,11 @@
 struct Player {
   Vector3 position;
   Vector3 velocity;
+  float radius = 0.5f;
   float vertical_speed = 0.0f; // Added it because I needed to separate XZ movement from Y movement
   float yaw = 0.0f;
   float pitch = 0.0f;
+  bool is_grounded = false;
   Gun gun;
   Vector3 last_hit_point = {0};
   float hit_marker_timer = 0;
@@ -25,6 +27,8 @@ struct Player {
   void shoot(
     const World& world,
     std::vector<Enemy>& enemies );
+
+    void check_if_grounded(const World& world);
 };
 
 #endif // ATTEMPT_AT_GAME_PLAYER_H
