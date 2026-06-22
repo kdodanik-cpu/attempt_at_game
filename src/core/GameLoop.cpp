@@ -28,6 +28,7 @@ void GameLoop::init() {
 void GameLoop::update(Player& player) {
   float dt = GetFrameTime();
   player.update(dt, world, enemies);
+  player.handle_horizontal_collisions(world);
   player.handle_mouse_movement();
   enemies.erase(
     std::remove_if(

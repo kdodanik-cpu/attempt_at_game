@@ -4,30 +4,55 @@
 
 #include "Player.h"
 #include <algorithm>
-#include <iostream>
+#include <complex>
 #include <ostream>
 #include <raymath.h>
+#include <unistd.h>
 #include <variant>
 
 static constexpr Vector3 EYE_LEVEL_OFFSET = Vector3(0.0f, 1.6f, 0.0f);
 static constexpr float SENSITIVITY = 0.01f;
 static constexpr float PITCH_LIMIT = PI / 2.0f - 0.01f;
+static constexpr float GROUNDED_SCALAR = 10.0f;
+static constexpr float  AIRBORNE_SCALAR = 3.3f;
 struct HitCandidate {
   RayCollision ray_coll;
   std::variant<const Box*, Enemy*> possible_entity;
 };
 
+// Computes camera
+Camera Player::get_camera() const {
+  Camera camera;
+  camera.up = Vector3(0.0f, 1.0f, 0.0f);
+  camera.fovy = 75.0f;
+  camera.projection = CAMERA_PERSPECTIVE;
+  camera.position = position + EYE_LEVEL_OFFSET;
+  Vector3 forward_vector = {
+    cosf(pitch) * sinf(yaw),
+    sinf(pitch),
+    cosf(pitch) * cosf(yaw)
+  };
+  camera.target = camera.position + forward_vector;
+  return camera;
+}
+
+void Player::handle_mouse_movement() {
+  Vector2 mouse_delta = GetMouseDelta();
+  yaw -= mouse_delta.x * SENSITIVITY;
+  pitch -= mouse_delta.y * SENSITIVITY;
+  pitch = std::clamp(pitch, -PITCH_LIMIT, PITCH_LIMIT ); // Working in rads
+}
 
 void Player::check_if_grounded(const World& world)
 {
-  // Knowing whether the player is resting a top an object requires access to the objects it is allowed
-  // to rest on. Because of this, I passed a World, which contains colliders, as a read-only parameter.
-  // The most obvious thing to begin discarding are objects whose top surface is above the player's bottom, as
-  // the player cannot rest on them. The remaining candidates ought to be checked on the basis of the X and Z axes.
-  // Objects not aligned on BOTH axes with the player must also be discarded since the player isn't going to touch them.
-  // If after all these checks more than one candidate collider remains, we simply choose that which is highest on the
-  // Y coordinate. There should be no issues with this because due to prior exclusions those above the player have
-  // already been filtered out, meaning the one highest is the one closest the player's bottom.
+   /*Knowing whether the player is resting a top an object requires access to the objects it is allowed
+   to rest on. Because of this, I passed a World, which contains colliders, as a read-only parameter.
+   The most obvious thing to begin discarding are objects whose top surface is above the player's bottom, as
+   the player cannot rest on them. The remaining candidates ought to be checked on the basis of the X and Z axes.
+   Objects not aligned on BOTH axes with the player must also be discarded since the player isn't going to touch them.
+   If after all these checks more than one candidate collider remains, we simply choose that which is highest on the
+   Y coordinate. There should be no issues with this because due to prior exclusions those above the player have
+   already been filtered out, meaning the one highest is the one closest the player's bottom.*/
 
 
   // Prevent bugs due to floating point precision errors
@@ -37,15 +62,15 @@ void Player::check_if_grounded(const World& world)
   for (const Box& box: world.Boxes)
   {
     float box_top_coordinate = box.position.y + box.dimensions.y * 0.5f;
-    if (position.y >= box_top_coordinate - TOLERANCE)
+    if (position.y - radius >= box_top_coordinate - TOLERANCE)
     {
       candidate_boxes.push_back(box);
     }
   }
 
-  // Note for self on how this works. remove_if doesn't remove anything perse. It reshuffles elements in the container
-  // so that those that ought to be excluded are placed at the back of the container and then returns a pointer to the
-  // index where the junk you don't want to retain begins, which is the first thing you feed to .erase().
+   /*Note for self on how this works. remove_if doesn't remove anything perse. It reshuffles elements in the container
+   so that those that ought to be excluded are placed at the back of the container and then returns a pointer to the
+   index where the junk you don't want to retain begins, which is the first thing you feed to .erase().*/
   candidate_boxes.erase(
     std::remove_if(
       candidate_boxes.begin(),
@@ -77,13 +102,45 @@ void Player::check_if_grounded(const World& world)
   if (candidate_boxes.empty()) {
     is_grounded = false;}
   else if(
-    position.y <= candidate_box->position.y + candidate_box->dimensions.y * 0.5f &&
-    position.y >= candidate_box->position.y + candidate_box->dimensions.y * 0.5f - TOLERANCE)
+    position.y - radius <= candidate_box->position.y + candidate_box->dimensions.y * 0.5f &&
+    position.y - radius >= candidate_box->position.y + candidate_box->dimensions.y * 0.5f - TOLERANCE)
   {
     is_grounded =  true;
   } else is_grounded = false;
 }
 
+void Player::handle_horizontal_collisions(const World& world)
+{
+  for (const Box& box : world.Boxes)
+  {
+    BoundingBox bounding_box = {
+      box.position - box.dimensions * 0.5f,
+      box.position + box.dimensions * 0.5f};
+
+    // Determine closes point in the box to the sphere's center
+    Vector3 closes_point = Vector3Clamp(position, bounding_box.min, bounding_box.max);
+    float squared_distance = Vector3DotProduct(closes_point - position, closes_point - position);
+    if (squared_distance < radius * radius)
+    {
+
+      /*
+       * I think there might be a missmatch between what the player's position is considered to be in different
+       * functions.
+       */
+
+      float distance = Vector3Length(closes_point - position);
+      float penetration = radius - distance;
+      Vector3 normal = Vector3Normalize(position - closes_point);
+      printf("Normal (%.3f, %.3f, %.3f)\n", normal.x, normal.y, normal.z);
+      printf("Penetration: %.3f\n", penetration);
+      printf("Distance: %.3f\n", distance);
+      printf("position: %.3f\n", position);
+      printf("closest_point: %.3f\n", closes_point);
+      position += Vector3Scale(normal, penetration);
+    }
+
+  }
+}
 void Player::shoot(
   const World& world,
   std::vector<Enemy>& enemies)
@@ -172,19 +229,17 @@ if (closest != candidate_hits.end())
 };
 
 void Player::update(float dt, const World& world, std::vector<Enemy>& enemies) {
-  ///////////////////////
-  // CONTROLLER INPUT //
-  //////////////////////
-  Camera camera = get_camera();
+  // ------------------------------------------------------------------------
+  // CONTROLLER INPUT
+  // ------------------------------------------------------------------------
 
+  // Required variables to determine move direction according to camera
+  Camera camera = get_camera();
   Vector3 move = {0};
   Vector3 distance = camera.target - camera.position;
-  distance.y = 0.0f;
+  distance.y = 0.0f; // Zeroed because even if you look up the player shouldn't move upward
   Vector3 forwardVector = Vector3Normalize(distance);
   Vector3 rightVector = Vector3CrossProduct(forwardVector, Vector3(0.0f, 1.0f, 0.0f));
-
-  // Required to check to determine how player should move
-  check_if_grounded(world);
 
   // Forward movement
   if (IsKeyDown(KEY_W)) {
@@ -199,13 +254,11 @@ void Player::update(float dt, const World& world, std::vector<Enemy>& enemies) {
     move += rightVector;
   }
 
-  const float GROUNDED_SCALAR = 10.0f;
-  const float AIRBORNE_SCALAR = 3.3f;
+  // Required check that'll determine movement behavior (speed, whether player is allowed to jump, etc...)
+  check_if_grounded(world);
 
-  // There's probably a prettier way to write this...
-  if (is_grounded) {velocity = Vector3Scale(move, GROUNDED_SCALAR);}
-  else velocity = Vector3Scale(move, AIRBORNE_SCALAR);
-  //velocity = Vector3Scale(move, 10.0f);
+  float scalar_to_apply = is_grounded ? GROUNDED_SCALAR : AIRBORNE_SCALAR;
+  velocity = Vector3Scale(move, scalar_to_apply);
   position += velocity * dt;
 
   // Handle vertical movement, independently
@@ -214,15 +267,13 @@ void Player::update(float dt, const World& world, std::vector<Enemy>& enemies) {
   }
   position.y += vertical_speed * dt;
 
-
-
   // Apply gravity
-  vertical_speed -= 2.5f * dt;
+  vertical_speed = is_grounded ? vertical_speed : vertical_speed - 2.5f * dt;
 
-  float floor_height = world.get_world_height(position.x, position.z, position.y);
+  float floor_height = world.get_world_height(position.x, position.z, position.y - radius);
 
-
-  if (position.y <= floor_height && vertical_speed < 0.0f) {
+  if (position.y <= floor_height && vertical_speed < 0.0f)
+  {
     vertical_speed = 0.0f;
     position.y = floor_height;
   }
@@ -238,27 +289,3 @@ void Player::update(float dt, const World& world, std::vector<Enemy>& enemies) {
   gun.update(dt);
   hit_marker_timer = std::max(hit_marker_timer - dt, 0.0f);
   };
-
-void Player::handle_mouse_movement() {
-  Vector2 mouse_delta = GetMouseDelta();
-  yaw -= mouse_delta.x * SENSITIVITY;
-  pitch -= mouse_delta.y * SENSITIVITY;
-  pitch = std::clamp(pitch, -PITCH_LIMIT, PITCH_LIMIT ); // Working in rads
-}
-
-// Computes camera
-Camera Player::get_camera() const {
-  Camera camera;
-  camera.up = Vector3(0.0f, 1.0f, 0.0f);
-  camera.fovy = 75.0f;
-  camera.projection = CAMERA_PERSPECTIVE;
-  camera.position = position + EYE_LEVEL_OFFSET;
-  Vector3 forward_vector = {
-    cosf(pitch) * sinf(yaw),
-    sinf(pitch),
-    cosf(pitch) * cosf(yaw)
-  };
-  camera.target = camera.position + forward_vector;
-  return camera;
-}
-
