@@ -68,9 +68,11 @@ void Player::check_if_grounded(const World& world)
     }
   }
 
-   /*Note for self on how this works. remove_if doesn't remove anything perse. It reshuffles elements in the container
-   so that those that ought to be excluded are placed at the back of the container and then returns a pointer to the
-   index where the junk you don't want to retain begins, which is the first thing you feed to .erase().*/
+   /* Note for self on how this works
+    * remove_if doesn't remove anything perse. It reshuffles elements in the container
+    * so that those that ought to be excluded are placed at the back of the container and then returns a pointer to the
+    * index where the junk you don't want to retain begins, which is the first thing you feed to .erase().
+    */
   candidate_boxes.erase(
     std::remove_if(
       candidate_boxes.begin(),
@@ -86,7 +88,7 @@ void Player::check_if_grounded(const World& world)
        radius + box.dimensions.z * 0.5f};
 
         Vector2 separation = center_distance - halves_distance;
-        if (separation.x > 0 && separation.y > 0) should_remove = true;
+        if (separation.x > 0 || separation.y > 0) should_remove = true;
         return should_remove;
       })
       , candidate_boxes.end()
@@ -131,11 +133,6 @@ void Player::handle_horizontal_collisions(const World& world)
       float distance = Vector3Length(closes_point - position);
       float penetration = radius - distance;
       Vector3 normal = Vector3Normalize(position - closes_point);
-      printf("Normal (%.3f, %.3f, %.3f)\n", normal.x, normal.y, normal.z);
-      printf("Penetration: %.3f\n", penetration);
-      printf("Distance: %.3f\n", distance);
-      printf("position: %.3f\n", position);
-      printf("closest_point: %.3f\n", closes_point);
       position += Vector3Scale(normal, penetration);
     }
 

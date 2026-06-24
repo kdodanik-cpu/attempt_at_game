@@ -11,8 +11,8 @@
 
 struct Player {
     float radius = 0.5f;
-    Vector3 position;
-    Vector3 velocity;
+    Vector3 position = {0};
+    Vector3 velocity = {0};
     float vertical_speed = 0.0f; // Added it because I needed to separate XZ movement from Y movement
     float yaw = 0.0f;
     float pitch = 0.0f;

@@ -2,10 +2,11 @@
 // Created by Krish on 3/7/2026.
 //
 #include "GameLoop.h"
-
 #include <algorithm>
 #include <raylib.h>
 #include <raymath.h>
+#include <pstl/algorithm_impl.h>
+
 #include "world/World.h"
 #include "world/Enemy.h"
 
@@ -16,12 +17,7 @@ void GameLoop::init() {
   DisableCursor();
   world.init();
   Enemy test_enemy;
-  test_enemy = {
-    1.6f,
-    0.5f,
-    Vector3{0.0f, 0.0f, 2.0f},
-    100
-  };
+  test_enemy.position = Vector3{0.0f, 0.0f, 2.0f};
   enemies.push_back(test_enemy);
 }
 
@@ -30,6 +26,7 @@ void GameLoop::update(Player& player) {
   player.update(dt, world, enemies);
   player.handle_horizontal_collisions(world);
   player.handle_mouse_movement();
+  for (Enemy& e : enemies) e.update(dt, player, world);
   enemies.erase(
     std::remove_if(
       enemies.begin(), enemies.end(),
@@ -37,7 +34,8 @@ void GameLoop::update(Player& player) {
   enemies.end());
 }
 
-void GameLoop::draw(const Player& player) {
+void GameLoop::draw(const Player& player)
+{
   BeginDrawing();
   ClearBackground(WHITE);
   BeginMode3D(player.get_camera());
@@ -45,24 +43,24 @@ void GameLoop::draw(const Player& player) {
   DrawCapsule(
     player.position,
     player.position + Vector3{0, 1.6f, 0},
-    0.5f,
+    player.radius,
     8,
     8,
     PURPLE
     );
   for (const Enemy& enemy : enemies)
   {
-      DrawCapsule(
-        enemy.position,
-        Vector3{
-          enemy.position.x,
-          enemy.position.y + enemy.height,
-          enemy.position.z},
-          enemy.radius,
-          8,
-          8,
-          YELLOW
-        );
+    DrawCapsule(
+      enemy.position,
+      Vector3{
+        enemy.position.x,
+        enemy.position.y + enemy.height,
+        enemy.position.z},
+        enemy.radius,
+        8,
+        8,
+        YELLOW
+      );
   }
   if (player.hit_marker_timer > 0)
     DrawSphere(player.last_hit_point, 0.1f, RED);

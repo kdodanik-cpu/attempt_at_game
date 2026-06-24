@@ -3,7 +3,6 @@
 //
 
 #include "World.h"
-
 #include <iostream>
 #include <raymath.h>
 
@@ -30,6 +29,7 @@ void World::init() {
     });
 }
 
+// Gets the y coordinate the player should consider floor (Varies depends on colliders beneath it)
 float World::get_world_height(float x, float z, float y) const {
 
   std::vector<float> candidate_heights;
